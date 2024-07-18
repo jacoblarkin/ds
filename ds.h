@@ -58,11 +58,11 @@ void *ds_darray_at(ds_darray array, size_t index);
 // da_alloc must be initialized before calling this function
 size_t ds_darray_resize(ds_darray *array, size_t new_capacity, void *alloc_context);
 
-// Push elem on the back of the array
+// Push elem on the back of the array and returns 1 if successful or 0 if failed
 // calls resize if capacity is not large enough to fit elem, grows by doubling capacity
 // size bytes from elem will be memcpy'd if overlap is 0, or memmove'd if overlap is not 0
 // alloc_context is the context pointer passed to ds_alloc
 // da_alloc must be initialized before calling this function
-void ds_darray_push(ds_darray *array, void *elem, int overlap, void *alloc_context);
+int ds_darray_push(ds_darray *array, void *elem, int overlap, void *alloc_context);
 
 #endif
