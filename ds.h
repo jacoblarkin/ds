@@ -5,7 +5,7 @@
 
 #define DSVERSION_MAJOR 0
 #define DSVERSION_MINOR 0
-#define DSVERSION_PATCH 0
+#define DSVERSION_PATCH 1
 
 // Allocator type
 // Assumptions:
