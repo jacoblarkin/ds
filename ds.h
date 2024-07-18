@@ -27,4 +27,42 @@ extern ds_allocator ds_alloc;
 // To use add `ds_alloc = ds_malloc;`
 void *ds_malloc(void *context, void *to_free, size_t old, size_t new_);
 
+// Dynamic array
+// length and capacity are self explanatory
+// size is the size of an element of the array
+// data is pointer to buffer of size >=(size*capacity)
+typedef struct {
+    size_t length, capacity, size;
+    void* data;
+} ds_darray;
+
+// Create a new ds_darray with a certain element size and capacity
+// alloc_context is the context pointer passed to ds_alloc
+// da_alloc must be initialized before calling this function
+ds_darray ds_new_darray(size_t size, size_t capacity, void *alloc_context);
+
+// Free data pointer for a ds_darray
+// alloc_context is the context pointer passed to ds_alloc
+// da_alloc must be initialized before calling this function
+// returns value returned by ds_alloc
+void *ds_delete_darray(ds_darray array, void *alloc_context);
+
+// Return pointer to index-th element of data pointer
+// (returns data + size * index)
+// returns NULL if index > length - 1
+void *ds_darray_at(ds_darray array, size_t index);
+
+// Resize darray to have capacity new_capacity
+// returns new_capacity if successful, returns 0 if allocation failed
+// alloc_context is the context pointer passed to ds_alloc
+// da_alloc must be initialized before calling this function
+size_t ds_darray_resize(ds_darray *array, size_t new_capacity, void *alloc_context);
+
+// Push elem on the back of the array
+// calls resize if capacity is not large enough to fit elem, grows by doubling capacity
+// size bytes from elem will be memcpy'd if overlap is 0, or memmove'd if overlap is not 0
+// alloc_context is the context pointer passed to ds_alloc
+// da_alloc must be initialized before calling this function
+void ds_darray_push(ds_darray *array, void *elem, int overlap, void *alloc_context);
+
 #endif
