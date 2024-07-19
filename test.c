@@ -2,28 +2,33 @@
 
 #include <stdio.h>
 
-#define PASS 0
-#define FAIL -1
+#define RED "\033[0;31m"
+#define GREEN "\033[0;32m"
+#define RESET "\033[0m"
 
-int test_ds_malloc() {
+#define PASS NULL
+#define TEST(fn) const char *test_##fn()
+#define DOTEST(fn) (msg = test_##fn()) ? printf(RED "FAIL" RESET " (" #fn "): %s", msg) \
+			 : puts(GREEN "PASS" RESET " (" #fn ")")
+
+TEST(ds_malloc) {
     ds_alloc = ds_malloc;
 
     int *tmp = ds_alloc(NULL, NULL, 0, 4);
-    if(!tmp) return FAIL;
+    if(!tmp) return "Failed to allocate memory.";
     *tmp = 4;
     tmp = ds_alloc(NULL, tmp, 4, 8);
-    if(!tmp || *tmp != 4) return FAIL;
+    if(!tmp) return "Failed to reallocate memory.";
+    if(*tmp != 4) return "Failed to copy existing data when reallocating.";
     tmp = ds_alloc(NULL, tmp, 8, 0);
-    if(tmp) return FAIL;
+    if(tmp) return "Failed to free memory or failed to return NULL after freeing memory.";
 
     return PASS;
 }
 
 int main(int argc, char **argv) {
-    if(test_ds_malloc() == FAIL)
-        puts("Failed ds_malloc test");
-    else
-        puts("Passed ds_malloc test");
+    const char *msg;
+    DOTEST(ds_malloc);
 
     return 0;
 }
