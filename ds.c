@@ -37,17 +37,14 @@ size_t ds_darray_resize(ds_darray *array, size_t new_capacity, void *alloc_conte
     return array->data ? new_capacity : 0;
 }
 
-int ds_darray_push(ds_darray *array, void *elem, int overlap, void *alloc_context) {
+int ds_darray_push(ds_darray *array, void *elem, void *alloc_context) {
     if(array->length >= array->capacity) {
         size_t cap = ds_darray_resize(array, array->capacity * 2, alloc_context);
         if(cap == 0)
             return 0;
     }
-
     void *dst = (unsigned char*)array->data + array->size * array->length;
-    void *(*cpy_fn)(void*, const void*, size_t) = overlap ? memmove : memcpy;
-
-    void *ret = cpy_fn(dst, elem, array->size);
-
+    void *ret = memcpy(dst, elem, array->size);
+    array->length++;
     return ret == dst;
 }
