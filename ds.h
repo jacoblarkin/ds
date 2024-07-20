@@ -36,6 +36,10 @@ typedef struct {
     void* data;
 } ds_darray;
 
+// Access ds_darray as if it is a c array (i.e., using [])
+// a is the array (as a value, not a pointer) and T is the type
+#define DS_DARRAY_AS(a, T) ((T*)(a).data)
+
 // Create a new ds_darray with a certain element size and capacity
 // alloc_context is the context pointer passed to ds_alloc
 // da_alloc must be initialized before calling this function
@@ -45,7 +49,8 @@ ds_darray ds_new_darray(size_t size, size_t capacity, void *alloc_context);
 // alloc_context is the context pointer passed to ds_alloc
 // da_alloc must be initialized before calling this function
 // returns value returned by ds_alloc
-void *ds_delete_darray(ds_darray array, void *alloc_context);
+// If return value is NULL, sets length, capacity, size to 0 and data to NULL
+void *ds_delete_darray(ds_darray *array, void *alloc_context);
 
 // Return pointer to index-th element of data pointer
 // (returns data + size * index)
