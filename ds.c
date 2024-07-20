@@ -21,7 +21,7 @@ ds_darray ds_new_darray(size_t size, size_t capacity, void *alloc_context) {
 }
 
 void *ds_delete_darray(ds_darray *array, void *alloc_context) {
-    void *ret = ds_alloc(alloc_context, array.data, array.size * array.capacity, 0);
+    void *ret = ds_alloc(alloc_context, array->data, array->size * array->capacity, 0);
     if(!ret) {
         array->length = 0;
 	array->capacity = 0;
