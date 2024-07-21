@@ -4,8 +4,8 @@
 #include <stddef.h>
 
 #define DSVERSION_MAJOR 0
-#define DSVERSION_MINOR 0
-#define DSVERSION_PATCH 1
+#define DSVERSION_MINOR 1
+#define DSVERSION_PATCH 0
 
 // Allocator type
 // Assumptions:
