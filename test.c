@@ -71,10 +71,40 @@ TEST(ds_darray_resize) {
 }
 
 TEST(ds_darray_push) {
+    ds_alloc = ds_malloc;
+
+    ds_darray array = ds_new_darray(4, 2, NULL);
+    int one = 1;
+    int success = ds_darray_push(&array, &one, NULL);
+    if(!success) return "Push returned 0, indicating failure.";
+    if(array.length != 1) return "Did not increment array length.";
+    if(array.size != 4) return "Incorrectly changed array element size.";
+    if(array.capacity != 2) return "Incorrectly changed array capacity.";
+    if(DS_DARRAY_AS(array, int)[0] != 1) return "Value copied over is incorrect.";
+    int two = 2;
+    success = ds_darray_push(&array, &two, NULL);
+    if(!success) return "Push returned 0, indicating failure.";
+    if(array.length != 2) return "Did not increment array length.";
+    if(DS_DARRAY_AS(array, int)[0] != 1) return "Incorrectly changed first value.";
+    if(DS_DARRAY_AS(array, int)[1] != 2) return "Second value copied over is incorrect.";
+    ds_delete_darray(&array, NULL);
     return PASS;
 }
 
 TEST(ds_darray_at) {
+    ds_alloc = ds_malloc;
+
+    ds_darray array = ds_new_darray(4, 2, NULL);
+    int one = 1;
+    int two = 2;
+    int success = ds_darray_push(&array, &one, NULL);
+    success = ds_darray_push(&array, &two, NULL);
+    int *val = ds_darray_at(array, 1);
+    if(!val) return "Wasn't able to get 2nd element of array with 2 elements.";
+    if(*val != 2) return "Returned pointer to incorrect value.";
+    int *val_null = ds_darray_at(array, 3);
+    if(val_null) return "Incorrectly returned pointer for index > length.";
+    ds_delete_darray(&array, NULL);
     return PASS;
 }
 
