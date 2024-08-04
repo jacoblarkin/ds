@@ -70,4 +70,57 @@ size_t ds_darray_resize(ds_darray *array, size_t new_capacity, void *alloc_conte
 // da_alloc must be initialized before calling this function
 int ds_darray_push(ds_darray *array, void *elem, void *alloc_context);
 
+// Hash Set
+// A hash set is just a dynamic array with a hash function to determine where
+// in the array to store a given value.
+// Open addressing with linear probing is used to deal with collision.
+// Because of this, the hash function should never return 0 (the empty sentinel)
+// or UINT64_MAX (the zombie sentinel).
+// Two functions are needed for the hash set to operate, a hash function which
+// takes a void* to the data to hash, and a comparison function which compares
+// two void* that point to the elements to compare.
+// The comparison function should return 0 if the values are equal and a non-zero
+// int otherwise.
+// Finally, there is a uint64_t* to an array of hashes corresponding to the values
+// stored in the data ds_darray.
+typedef struct {
+    ds_darray data;
+    uint64_t *hashes;
+    uint64_t (*hash)(void*);
+    int (*cmp)(void*, void*);
+} ds_hashset;
+
+// Create a new hash set with a given element size, initial capacity,
+// hash function, comparison function, and allocation context.
+// ds_alloc must be initialized before calling this function.
+ds_hashset ds_new_hashset(size_t size, size_t capacity, uint64_t (*hash)(void*),
+		          int (*cmp)(void*, void*), void *alloc_context);
+
+// Delete a ds_hashset with a given allocation context.
+// Returns result of ds_alloc, i.e., NULL if deletion successful.
+// If deletion sucessful, data size, length, capacity set to 0 and hashes and
+// data.data set to NULL.
+// ds_alloc must be initialized before calling this.
+void *ds_delete_hashset(ds_hashset *set, void *alloc_context);
+
+// Insert a new element into the set by hashing the value at elem.
+// Will resize data and hashes if needed (i.e., if length >= 0.7 * capacity).
+// If there is a conflict, open addressing with linear probing is used.
+// returns a pointer to the element in the set if successful, NULL if failed.
+// If set already contains element, returns pointer to existing element.
+// ds_alloc must be initialized if resizing is tried.
+void *ds_hashset_insert(ds_hashset *set, void *elem);
+
+// Check if hashset contains element elem.
+// Hashes elem using hash and compares values using cmp.
+// Returns 1 if it does contain the element and 0 otherwise.
+// Does not allocate or free memeory.
+int ds_hashset_contains(ds_hashset *set, void *elem);
+
+// Remove element elem from hashset
+// Sets hash in hashes to UINT64_MAX as zombie sentinel.
+// Returns 1 if value found and removed, and 0 if value is not in set.
+// Does not allocate or free memory.
+int ds_hashset_remove(ds_hashset *set, void *elem);
+
 #endif
