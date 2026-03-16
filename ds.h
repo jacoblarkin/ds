@@ -2,6 +2,7 @@
 #define DS_H
 
 #include <stddef.h>
+#include <stdint.h>
 
 #define DSVERSION_MAJOR 0
 #define DSVERSION_MINOR 1
@@ -57,6 +58,10 @@ void *ds_delete_darray(ds_darray *array, void *alloc_context);
 // returns NULL if index > length - 1
 void *ds_darray_at(ds_darray array, size_t index);
 
+// Return pointer to index-th element of data pointer
+// returns data + size * index regardless of array length
+void *ds_darray_at_unchecked(ds_darray array, size_t index);
+
 // Resize darray to have capacity new_capacity
 // returns new_capacity if successful, returns 0 if allocation failed
 // alloc_context is the context pointer passed to ds_alloc
@@ -97,7 +102,9 @@ ds_hashset ds_new_hashset(size_t size, size_t capacity, uint64_t (*hash)(void*),
 		          int (*cmp)(void*, void*), void *alloc_context);
 
 // Delete a ds_hashset with a given allocation context.
-// Returns result of ds_alloc, i.e., NULL if deletion successful.
+// Returns result of ds_alloc, i.e., NULL if deletion successful, result for deleting
+// hashes if deletion of data successful but not hashes, result of deleting data if
+// deletion unsuccesful.
 // If deletion sucessful, data size, length, capacity set to 0 and hashes and
 // data.data set to NULL.
 // ds_alloc must be initialized before calling this.
@@ -109,7 +116,7 @@ void *ds_delete_hashset(ds_hashset *set, void *alloc_context);
 // returns a pointer to the element in the set if successful, NULL if failed.
 // If set already contains element, returns pointer to existing element.
 // ds_alloc must be initialized if resizing is tried.
-void *ds_hashset_insert(ds_hashset *set, void *elem);
+void *ds_hashset_insert(ds_hashset *set, void *elem, void *alloc_context);
 
 // Check if hashset contains element elem.
 // Hashes elem using hash and compares values using cmp.

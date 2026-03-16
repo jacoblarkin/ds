@@ -8,7 +8,7 @@
 
 #define PASS NULL
 #define TEST(fn) const char *test_##fn(void)
-#define DOTEST(fn) (msg = test_##fn()) ? printf(RED "FAIL" RESET " (" #fn "): %s", msg) \
+#define DOTEST(fn) (msg = test_##fn()) ? printf(RED "FAIL" RESET " (" #fn "): %s\n", msg) \
 			 : puts(GREEN "PASS" RESET " (" #fn ")")
 
 TEST(ds_malloc) {
@@ -108,8 +108,106 @@ TEST(ds_darray_at) {
     return PASS;
 }
 
+uint64_t inthash(void *e) {
+    return (uint64_t)*(int*)e;
+}
+
+int intcmp(void *l, void *r) {
+    return *(int*)l - *(int*)r;
+}
+
+TEST(ds_new_hashset) {
+    ds_alloc = ds_malloc;
+
+    ds_hashset hs = ds_new_hashset(sizeof(int), 8, inthash, intcmp, NULL);
+    if(hs.data.data == NULL) return "Did not allocate data array.";
+    if(hs.data.size != sizeof(int)) return "Array size not size of int.";
+    if(hs.data.length != 0) return "Initial set doesn't have length 0.";
+    if(hs.data.capacity != 8) return "Initial set doesn't have length 0.";
+    if(hs.hashes == NULL) return "Didn't allocate space for hashes.";
+    if(hs.hash != inthash) return "Didn't save correct hash function.";
+    if(hs.cmp != intcmp) return "Didn't save correct cmp function.";
+    return PASS;
+}
+
+TEST(ds_delete_hashset) {
+    ds_alloc = ds_malloc;
+
+    ds_hashset hs = ds_new_hashset(sizeof(int), 8, inthash, intcmp, NULL);
+    if(ds_delete_hashset(&hs, NULL) != NULL)
+        return "Delete hashset did not return NULL.";
+    if(hs.data.data != NULL) return "Hashset array not set to NULL.";
+    if(hs.data.size != 0) return "Hashset data size not 0 after deletion.";
+    if(hs.data.capacity != 0) return "Hashset data capacity not 0 after deletion.";
+    if(hs.data.length != 0) return "Hashset data length not 0 after deletion.";
+    if(hs.hashes != NULL) return "Hashset hashes not NULL after deletion.";
+    return PASS;
+}
+
+TEST(ds_hashset_insert) {
+    ds_alloc = ds_malloc;
+
+    ds_hashset hs = ds_new_hashset(sizeof(int), 8, inthash, intcmp, NULL);
+    int vals[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    size_t n = sizeof(vals)/sizeof(vals[0]);
+    for(size_t i = 0; i < n; ++i) {
+        void *v = ds_hashset_insert(&hs, &vals[i], NULL);
+        if(v == NULL)
+            return "Insertion failed.";
+        if(*(int*)v != vals[i])
+            return "Returned value from insert not equal to value passed in.";
+        if(hs.data.length != i+1)
+            return "Length of hashset not increasing with insertion.";
+    }
+    if(hs.data.capacity <= 8)
+        return "Capacity of hashset did not increase even though we inserted more elements than initial allocation.";
+    ds_delete_hashset(&hs, NULL);
+    return PASS;
+}
+
+TEST(ds_hashset_contains) {
+    ds_alloc = ds_malloc;
+
+    ds_hashset hs = ds_new_hashset(sizeof(int), 8, inthash, intcmp, NULL);
+    int vals[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    size_t n = sizeof(vals)/sizeof(vals[0]);
+    for(size_t i = 0; i < n; ++i) {
+        ds_hashset_insert(&hs, &vals[i], NULL);
+        if(!ds_hashset_contains(&hs, &vals[i]))
+            return "Hashset does not contain element we just inserted?";
+    }
+    for(size_t i = 0; i < n; ++i) {
+        if(!ds_hashset_contains(&hs, &vals[i]))
+            return "Hashset does not contain element we inserted previously.";
+    }
+
+    ds_delete_hashset(&hs, NULL);
+    return PASS;
+}
+
+TEST(ds_hashset_remove) {
+    ds_alloc = ds_malloc;
+
+    ds_hashset hs = ds_new_hashset(sizeof(int), 8, inthash, intcmp, NULL);
+    int vals[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    size_t n = sizeof(vals)/sizeof(vals[0]);
+    for(size_t i = 0; i < n; ++i) {
+        void *el = ds_hashset_insert(&hs, &vals[i], NULL);
+    }
+    for(size_t i = 0; i < n; ++i) {
+        ds_hashset_remove(&hs, &vals[i]);
+        if(ds_hashset_contains(&hs, &vals[i]))
+            return "Hashset contains element we just removed?";
+    }
+
+    ds_delete_hashset(&hs, NULL);
+    return PASS;
+}
+
 int main(int argc, char **argv) {
     const char *msg;
+
+    // Array
     DOTEST(ds_malloc);
     DOTEST(ds_new_darray);
     DOTEST(ds_delete_darray);
@@ -117,5 +215,13 @@ int main(int argc, char **argv) {
     DOTEST(ds_darray_push);
     DOTEST(ds_darray_at);
 
+    // Hash Set
+    DOTEST(ds_new_hashset);
+    DOTEST(ds_delete_hashset);
+    DOTEST(ds_hashset_insert);
+    DOTEST(ds_hashset_contains);
+    DOTEST(ds_hashset_remove);
+
     return 0;
 }
+
