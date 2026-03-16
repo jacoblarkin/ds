@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #define DSVERSION_MAJOR 0
-#define DSVERSION_MINOR 1
+#define DSVERSION_MINOR 2
 #define DSVERSION_PATCH 0
 
 // Allocator type
