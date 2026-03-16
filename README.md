@@ -13,8 +13,8 @@ Access using at function is bounds checked.
 Unchecked access also allowed in a separate function.
 
 ## TODO
-[ ] Insertion at arbitrary points
-[ ] Pop from back
+- [ ] Insertion at arbitrary points
+- [ ] Pop from back
 
 # Hash sets
 
@@ -32,7 +32,7 @@ int cmp(void*, void*); // Returns 0 when objects equal
 Hash value `0` is reserved for the empty sentinel and hash value `UINT64_MAX` is reserved for the zombie sentinel.
 
 ## TODO
-[ ] Optimize case where capacity is power of 2
+- [ ] Optimize case where capacity is power of 2
 
 # Testing
 
