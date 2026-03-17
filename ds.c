@@ -122,7 +122,7 @@ void *ds_hashset_resize(ds_hashset *set, size_t new_size, void *alloc_context) {
     }
     void *ret = ds_delete_darray(&old_data, alloc_context);
     void *ret2 = ds_alloc(alloc_context, old_hashes, old_cap * sizeof(uint64_t), 0);
-    return !ret ? ret : ret2;
+    return ret ? ret : ret2;
 }
 
 void *ds_hashset_insert(ds_hashset *set, void *elem, void *alloc_context) {
@@ -149,6 +149,101 @@ int ds_hashset_remove(ds_hashset *set, void *elem) {
     if(set->hashes[loc] == 0 || set->hashes[loc] == UINT64_MAX)
         return 0;
     set->hashes[loc] = UINT64_MAX;
+    return 1;
+}
+
+ds_hashmap ds_new_hashmap(size_t keysize, size_t valuesize, size_t capacity, 
+        uint64_t (*keyhash)(void*), int (*keycmp)(void*, void*), void *alloc_context) {
+    return (ds_hashmap) {
+        .keys = ds_new_hashset(keysize, capacity, keyhash, keycmp, alloc_context),
+        .values = ds_alloc(alloc_context, NULL, 0, capacity * valuesize),
+        .valuesize = valuesize,
+    };
+}
+
+void *ds_delete_hashmap(ds_hashmap *map, void *alloc_context) {
+    void *ret = ds_delete_hashset(&map->keys, alloc_context);
+    if(ret) return ret;
+    ret = ds_alloc(alloc_context, map->values, 
+            map->valuesize * map->keys.data.capacity, 0);
+    if(ret) return ret;
+    map->valuesize = 0;
+    return NULL;
+}
+
+static inline
+void *ds_hashmap_resize(ds_hashmap *map, size_t new_size, void *alloc_context) {
+    ds_darray new_keys = ds_new_darray(map->keys.data.size, new_size, alloc_context);
+    if(!new_keys.data) return NULL;
+    size_t old_cap = map->keys.data.capacity;
+    uint64_t *new_hashes = ds_alloc(alloc_context, NULL, old_cap * sizeof(uint64_t),
+                                     new_size * sizeof(uint64_t));
+    if(!new_hashes) { ds_delete_darray(&new_keys, alloc_context); return NULL; }
+    uint64_t *new_values = ds_alloc(alloc_context, NULL, old_cap * map->valuesize,
+                                     new_size * map->valuesize);
+    if(!new_values) { 
+        ds_delete_darray(&new_keys, alloc_context); 
+        ds_alloc(alloc_context, new_hashes, new_size * sizeof(uint64_t), 0); 
+        return NULL; 
+    }
+    ds_darray old_keys = map->keys.data;
+    map->keys.data = new_keys;
+    uint64_t *old_hashes = map->keys.hashes;
+    map->keys.hashes = new_hashes;
+    void *old_values = map->values;
+    map->values = new_values;
+    for(size_t i = 0; i < old_cap; ++i) {
+        if(old_hashes[i] == 0 || old_hashes[i] == UINT64_MAX) continue;
+        void *key = ds_darray_at_unchecked(old_keys, i);
+        uint64_t hash = map->keys.hash(key);
+        size_t loc = ds_hashset_get_location(&map->keys, hash, key);
+        memcpy((uint8_t*)map->keys.data.data + map->keys.data.size * loc,
+               (uint8_t*)old_keys.data + old_keys.size * i, map->keys.data.size);
+        map->keys.hashes[loc] = hash;
+        memcpy((uint8_t*)map->values + map->valuesize * loc,
+               (uint8_t*)old_values + map->valuesize * i, map->valuesize);
+        map->keys.data.length++;
+    }
+    void *ret = ds_delete_darray(&old_keys, alloc_context);
+    void *ret2 = ds_alloc(alloc_context, old_hashes, old_cap * sizeof(uint64_t), 0);
+    void *ret3 = ds_alloc(alloc_context, old_values, old_cap * map->valuesize, 0);
+    return ret ? ret : ret2 ? ret2 : ret3;
+}
+
+void *ds_hashmap_insert(ds_hashmap *map, void *key, void *value, void *alloc_context) {
+    if(map->keys.data.length >= 3 * map->keys.data.capacity / 4)
+        ds_hashmap_resize(map, map->keys.data.capacity * 2, alloc_context);
+    uint64_t hash = map->keys.hash(key);
+    size_t loc = ds_hashset_get_location(&map->keys, hash, key);
+    int newinsertion = map->keys.hashes[loc] == 0;
+    memcpy((uint8_t*)map->keys.data.data + map->keys.data.size * loc, 
+            key, map->keys.data.size);
+    map->keys.hashes[loc] = hash;
+    if(newinsertion) map->keys.data.length++;
+    memcpy((uint8_t*)map->values + map->valuesize * loc, value, map->valuesize);
+    return (uint8_t*)map->values + map->valuesize * loc;
+}
+
+int ds_hashmap_contains(ds_hashmap *map, void *key) {
+    uint64_t hash = map->keys.hash(key);
+    size_t loc = ds_hashset_get_location(&map->keys, hash, key);
+    return map->keys.hashes[loc] != 0 && map->keys.hashes[loc] != UINT64_MAX;
+}
+
+void *ds_hashmap_at(ds_hashmap *map, void *key) {
+    uint64_t hash = map->keys.hash(key);
+    size_t loc = ds_hashset_get_location(&map->keys, hash, key);
+    return map->keys.hashes[loc] != 0 && map->keys.hashes[loc] != UINT64_MAX
+        ? map->values + map->valuesize * loc
+        : NULL;
+}
+
+int ds_hashmap_remove(ds_hashmap *map, void *key) {
+    uint64_t hash = map->keys.hash(key);
+    size_t loc = ds_hashset_get_location(&map->keys, hash, key);
+    if(map->keys.hashes[loc] == 0 || map->keys.hashes[loc] == UINT64_MAX)
+        return 0;
+    map->keys.hashes[loc] = UINT64_MAX;
     return 1;
 }
 

@@ -130,4 +130,63 @@ int ds_hashset_contains(ds_hashset *set, void *elem);
 // Does not allocate or free memory.
 int ds_hashset_remove(ds_hashset *set, void *elem);
 
+// Hashmap
+// Hashset of keys
+// values is array of values with locations corresponding to locations of keys
+// Open addressing with linear probing is used to deal with collision.
+// Because of this, the hash function should never return 0 (the empty sentinel)
+// or UINT64_MAX (the zombie sentinel).
+// Two functions are needed for the hash map to operate, a hash function which
+// takes a void* to the key to hash, and a comparison function which compares
+// two void* that point to the keys to compare.
+// The comparison function should return 0 if the keys are equal and a non-zero
+// int otherwise.
+typedef struct {
+    ds_hashset keys;
+    void *values;
+    size_t valuesize;
+} ds_hashmap;
+
+// Create a new hash map with given key and value sizes, initial capacity,
+// hash function, comparison function, and allocation context.
+// hash function and comparison function should operate on keys
+// ds_alloc must be initialized before calling this function.
+ds_hashmap ds_new_hashmap(size_t keysize, size_t valuesize, size_t capacity, 
+        uint64_t (*keyhash)(void*), int (*keycmp)(void*, void*), void *alloc_context);
+
+// Delete a ds_hashmap with a given allocation context.
+// Returns result of ds_alloc, i.e., NULL if deletion successful, result for deleting
+// values if deletion of keys successful but not values, result of deleting keys if
+// deletion unsuccesful.
+// If deletion sucessful, keys size, length, capacity, and values size set to 0,
+// and keys hashes, keys.data, and values set to NULL.
+// ds_alloc must be initialized before calling this.
+void *ds_delete_hashmap(ds_hashmap *map, void *alloc_context);
+
+// Insert a new value into the map by hashing the given key
+// Set will resize if needed, and values will be resized accordingly
+// If there is a conflict, open addressing with linear probing is used.
+// returns a pointer to the value in the map if successful, NULL if failed.
+// If map already contains keys, replaces value with new value
+// ds_alloc must be initialized if resizing is tried.
+void *ds_hashmap_insert(ds_hashmap *map, void *key, void *value, void *alloc_context);
+
+// Check if hashmap contains key 
+// Hashes key using data.hash and compares values using data.cmp.
+// Returns 1 if it does contain the element and 0 otherwise.
+// Does not allocate or free memeory.
+int ds_hashmap_contains(ds_hashmap *map, void *key);
+
+// Returns value corresponding to key if map contains key
+// Return NULL if map does not contain key
+// Does not allocate or free memeory.
+void *ds_hashmap_at(ds_hashmap *map, void *key);
+
+// Remove element elem from hashmap
+// Sets hash in data.hashes to UINT64_MAX as zombie sentinel.
+// Returns 1 if key found and removed, and 0 if key is not in map.
+// Does not allocate or free memory.
+int ds_hashmap_remove(ds_hashmap *map, void *key);
+
 #endif
+
