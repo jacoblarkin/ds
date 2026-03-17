@@ -6,6 +6,8 @@
 ds_allocator ds_alloc = NULL;
 
 void *ds_malloc(void *context, void *to_free, size_t old, size_t new) {
+    (void)context;
+    (void)old;
     if(to_free == NULL && new) return malloc(new);
     if(to_free && new) return realloc(to_free, new);
     if(to_free && !new) free(to_free);
@@ -167,6 +169,7 @@ void *ds_delete_hashmap(ds_hashmap *map, void *alloc_context) {
     ret = ds_alloc(alloc_context, map->values, 
             map->valuesize * map->keys.data.capacity, 0);
     if(ret) return ret;
+    map->values = NULL;
     map->valuesize = 0;
     return NULL;
 }
