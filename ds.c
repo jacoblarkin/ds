@@ -26,9 +26,9 @@ void *ds_delete_darray(ds_darray *array, void *alloc_context) {
     void *ret = ds_alloc(alloc_context, array->data, array->size * array->capacity, 0);
     if(!ret) {
         array->length = 0;
-	array->capacity = 0;
-	array->size = 0;
-	array->data = NULL;
+        array->capacity = 0;
+        array->size = 0;
+        array->data = NULL;
     }
     return ret;
 }
@@ -60,6 +60,89 @@ int ds_darray_push(ds_darray *array, void *elem, void *alloc_context) {
     void *ret = memcpy(dst, elem, array->size);
     array->length++;
     return ret == dst;
+}
+
+int ds_darray_concat(ds_darray *dst, ds_darray *array, void *alloc_context) {
+    if(dst->size != array->size) return 0;
+    if(dst->capacity < dst->length + array->length)
+        if(!ds_darray_resize(dst, dst->length+array->length, alloc_context)) return 0;
+    memcpy(ds_darray_at_unchecked(*dst, dst->length), array->data, 
+            array->size * array->length);
+    dst->length += array->length;
+    return 1;
+}
+
+int ds_darray_pop(ds_darray *array, void *dst) {
+    if(!array->length) return 0;
+    array->length -= 1;
+    if(dst) memcpy(dst, ds_darray_at_unchecked(*array, array->length), array->size);
+    return 1;
+}
+
+int ds_darray_insert(ds_darray *array, size_t idx, void *elem, void *alloc_context) {
+    if(idx > array->length) return 0;
+    if(idx == array->length) return ds_darray_push(array, elem, alloc_context);
+    if(array->capacity < array->length + 1)
+        if(!ds_darray_resize(array, array->capacity * 2, alloc_context))
+            return 0;
+    memmove(ds_darray_at_unchecked(*array, idx+1), ds_darray_at_unchecked(*array, idx), 
+            array->size * (array->length - idx));
+    memcpy(ds_darray_at_unchecked(*array, idx), elem, array->size);
+    array->length += 1;
+    return 1;
+}
+
+int ds_darray_insert_array(ds_darray *dst, size_t idx, ds_darray *elems, void *alloc_context) {
+    if(dst->size != elems->size) return 0;
+    if(idx > dst->length) return 0;
+    if(idx == dst->length) return ds_darray_concat(dst, elems, alloc_context);
+    if(dst->capacity < dst->length + elems->length)
+        if(!ds_darray_resize(dst, dst->length + elems->length, alloc_context))
+            return 0;
+    memmove(ds_darray_at_unchecked(*dst, idx + elems->length),
+            ds_darray_at_unchecked(*dst, idx), elems->size * (dst->length - idx));
+    memcpy(ds_darray_at_unchecked(*dst, idx), elems->data, elems->size * elems->length); 
+    dst->length += elems->length;
+    return 1;
+}
+
+int ds_darray_remove(ds_darray *array, size_t idx, void *dst) {
+    if(idx >= array->length) return 0;
+    if(dst) memcpy(dst, ds_darray_at_unchecked(*array, idx), array->size);
+    array->length -= 1;
+    if(idx < array->length)
+        memmove(ds_darray_at_unchecked(*array, idx),
+                ds_darray_at_unchecked(*array, idx+1),
+                array->size * (array->length - idx));
+    return 1;
+}
+
+int ds_darray_remove_range(ds_darray *array, size_t beg, size_t end, ds_darray *dst, void *alloc_context) {
+    if(beg >= array->length || end > array->length || end <= beg) return 0;
+    if(dst) {
+        ds_darray tmp = (ds_darray){
+            .length = end - beg,
+            .capacity = end - beg,
+            .size = array->size,
+            .data = ds_darray_at_unchecked(*array, beg),
+        };
+        ds_darray_concat(dst, &tmp, alloc_context);
+    }
+    if(end < array->length)
+        memmove(ds_darray_at_unchecked(*array, beg), ds_darray_at_unchecked(*array, end),
+                array->size * (array->length - end));
+    array->length -= end - beg;
+    return 1;
+
+}
+
+ds_darray ds_darray_subarray(ds_darray *array, size_t beg, size_t end, void *alloc_context) {
+    if(beg >= array->length || end > array->length || end <= beg) return (ds_darray){0};
+    ds_darray ret = ds_new_darray(array->size, end - beg, alloc_context);
+    if(!ret.data) return ret;
+    ret.length = end - beg;
+    memcpy(ret.data, ds_darray_at_unchecked(*array, beg), array->size * (end - beg));
+    return ret;
 }
 
 ds_hashset ds_new_hashset(size_t size, size_t capacity, uint64_t (*hash)(void*),

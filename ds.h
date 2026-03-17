@@ -75,6 +75,47 @@ size_t ds_darray_resize(ds_darray *array, size_t new_capacity, void *alloc_conte
 // da_alloc must be initialized before calling this function
 int ds_darray_push(ds_darray *array, void *elem, void *alloc_context);
 
+// Concatenate 2 arrays. Save the result in dst (i.e., the front array).
+// Resizes dst to fit both its original elements and all of array.
+// Returns 1 on success and 0 on failure (i.e., allocation failure or sizes different).
+int ds_darray_concat(ds_darray *dst, ds_darray *array, void *alloc_context);
+
+// Pop element off the back of the array and fill dst with value.
+// If dst is NULL, element is popped, but dst is not filled.
+// Returns 1 if pop successful (i.e., array->length > 0) and 0 if array is empty.
+int ds_darray_pop(ds_darray *array, void *dst);
+
+// Insert an element into array at index idx.
+// Pushed elements in range [idx, length) back by 1.
+// Will auto resize if needed.
+// If idx > array->length operation fails. If idx == array->length equivalent to push.
+// Returns 1 if successful, 0 if failed.
+int ds_darray_insert(ds_darray *array, size_t idx, void *elem, void *alloc_context);
+
+// Insert an array (elems) into another array (dst) at index idx in dst.
+// Pushed elements in range [idx, length) back by elems.length.
+// Will auto resize if needed.
+// If idx > array->length operation fails. If idx == array->length equivalent to concat.
+// Returns 1 if successful, 0 if failed.
+int ds_darray_insert_array(ds_darray *dst, size_t idx, ds_darray *elems, void *alloc_context);
+
+// Remove an element from the array at index idx.
+// Saves removed element in dst unless dst is NULL.
+// Returns 1 if removal successful (idx < array->length) and 0 otherwise.
+int ds_darray_remove(ds_darray *array, size_t idx, void *dst);
+
+// Remove multple elements from the array in the half open range [beg, end).
+// Saves removed elements in dst unless dst is NULL. Will resize dst if needed.
+// Returns 1 if removal successful (end <= array->length and no allocation failures)
+// and 0 otherwise.
+int ds_darray_remove_range(ds_darray *array, size_t beg, size_t end, ds_darray *dst, void *alloc_context);
+
+// Create a new array which is a subarray of the given array.
+// Copies elements in half open range [beg, end) into new array without 
+// removing them from the original array.
+// If allocation fails, returned array will be empty.
+ds_darray ds_darray_subarray(ds_darray *array, size_t beg, size_t end, void *alloc_context);
+
 // Hash Set
 // A hash set is just a dynamic array with a hash function to determine where
 // in the array to store a given value.
