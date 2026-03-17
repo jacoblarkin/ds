@@ -34,6 +34,17 @@ Hash value `0` is reserved for the empty sentinel and hash value `UINT64_MAX` is
 ## TODO
 - [ ] Optimize case where capacity is power of 2
 
+# Hash maps
+
+Hash maps implemented as a hash set of keys and an array of values with location of values in the array corresponding to location of keys in the array backing the hash set.
+Again, `ds_alloc` must be set prior to use and all memory is managed internally.
+See [Hash sets](#hash-sets) for information about hashing and conflict resolution.
+
+Basic API implemented including insertion, removal, checking for containment, and retrieval.
+
+## TODO
+- None. Good enough for now.
+
 # Testing
 
 Build tests with 
