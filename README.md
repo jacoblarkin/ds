@@ -8,13 +8,12 @@ Dynamic array implementation which saves size of elements and uses `memcpy` or `
 Requries `ds_alloc` to be set prior to use as it uses this internally to allocate and free memory.
 Will realloc (using `ds_alloc`) when more space is needed.
 
-Currently limited API, only supporting push (but not pop or push_front/pop_front) and not insertion at an arbitrary point.
 Access using at function is bounds checked.
 Unchecked access also allowed in a separate function.
 
 ## TODO
-- [ ] Insertion at arbitrary points
-- [ ] Pop from back
+- [x] Insertion at arbitrary points
+- [x] Pop from back
 
 # Hash sets
 
@@ -51,3 +50,16 @@ Build tests with
 ```sh
 cc -o test *.c
 ```
+
+# Future Plans
+
+- [ ] Views
+    - [ ] String View
+    - [ ] Span/Array View
+    - [ ] Set View
+    - [ ] Map View
+- [ ] Iterators
+- [ ] Basic suite of algorithms
+
+Are strings needed or just have c-strings/char-star, darray of char, and string views?
+
