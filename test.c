@@ -118,6 +118,168 @@ TESTFN(ds_darray_at) {
     return PASS;
 }
 
+TESTFN(ds_darray_concat) {
+    ds_alloc = ds_malloc;
+
+    ds_darray array1 = ds_new_darray(sizeof(int), 4, NULL);
+    int one[] = { 1, 2, 3, 4 };
+    for(size_t i = 0; i < 4; ++i) ds_darray_push(&array1, &one[i], NULL);
+    ds_darray array2 = ds_new_darray(sizeof(int), 4, NULL);
+    int two[] = { 5, 6, 7, 8 };
+    for(size_t i = 0; i < 4; ++i) ds_darray_push(&array2, &two[i], NULL);
+    int success = ds_darray_concat(&array1, &array2, NULL);
+    TEST(!success, "Concatenation did not succeed.");
+    size_t j;
+    for(j = 0; j < 4; ++j)
+        TEST(*(int*)ds_darray_at(array1, j) != one[j], 
+                "Unexpected value in concatenated array.");
+    for(j = 0; j < 4; ++j)
+        TEST(*(int*)ds_darray_at(array1, j+4) != two[j], 
+                "Unexpected value in concatenated array.");
+
+    ds_delete_darray(&array1, NULL);
+    ds_delete_darray(&array2, NULL);
+    return PASS;
+}
+
+TESTFN(ds_darray_pop) {
+    ds_alloc = ds_malloc;
+
+    ds_darray array1 = ds_new_darray(sizeof(int), 4, NULL);
+    int one[] = { 1, 2, 3, 4 };
+    for(size_t i = 0; i < 4; ++i) ds_darray_push(&array1, &one[i], NULL);
+    ds_darray_push(&array1, &one[0], NULL);
+    int success = ds_darray_pop(&array1, NULL);
+    TEST(!success, "Unsuccessful pop.");
+    for(size_t i = 0; i < 4; ++i) {
+        int v;
+        success = ds_darray_pop(&array1, &v);
+        TEST(!success, "Unsuccessful pop.");
+        TEST(v != one[3-i], "Value popped off is not what we expected.");
+        TEST(array1.length != 3-i, "Array length not decremented after pop.");
+    }
+    TEST(array1.length != 0, "Array is not empty after popping all elements.");
+    success = ds_darray_pop(&array1, NULL);
+    TEST(success, "Expected pop to fail for empty array.");
+
+    ds_delete_darray(&array1, NULL);
+    return PASS;
+}
+
+TESTFN(ds_darray_insert) {
+    ds_alloc = ds_malloc;
+
+    ds_darray array1 = ds_new_darray(sizeof(int), 4, NULL);
+    int one[] = { 1, 2, 3, 4 };
+    for(size_t i = 0; i < 4; ++i) ds_darray_push(&array1, &one[i], NULL);
+    int five = 5;
+    int success = ds_darray_insert(&array1, 2, &five, NULL);
+    TEST(!success, "Insertion failed.");
+    TEST(array1.length != 5, "Insertion did not increase length.");
+    TEST(array1.capacity < 5, "Insertion did not increase capacity even though array was already full.");
+    int expect[] = { 1, 2, 5, 3, 4 };
+    for(size_t i = 0; i < 5; ++i)
+        TEST(*(int*)ds_darray_at(array1, i) != expect[i], "Value in array is not what was expected.");
+
+    ds_delete_darray(&array1, NULL);
+    return PASS;
+}
+
+TESTFN(ds_darray_insert_array) {
+    ds_alloc = ds_malloc;
+
+    ds_darray array1 = ds_new_darray(sizeof(int), 4, NULL);
+    int one[] = { 1, 2, 3, 4 };
+    for(size_t i = 0; i < 4; ++i) ds_darray_push(&array1, &one[i], NULL);
+    ds_darray array2 = ds_new_darray(sizeof(int), 4, NULL);
+    int two[] = { 5, 6, 7, 8 };
+    for(size_t i = 0; i < 4; ++i) ds_darray_push(&array2, &two[i], NULL);
+    int success = ds_darray_insert_array(&array1, 2, &array2, NULL);
+    TEST(!success, "Insertion did not succeed.");
+    size_t j;
+    for(j = 0; j < 2; ++j)
+        TEST(*(int*)ds_darray_at(array1, j) != one[j], 
+                "Unexpected value in combined array.");
+    for(; j < 6; ++j)
+        TEST(*(int*)ds_darray_at(array1, j) != two[j-2], 
+                "Unexpected value in combined array.");
+    for(; j < 8; ++j)
+        TEST(*(int*)ds_darray_at(array1, j) != one[j-4], 
+                "Unexpected value in combined array.");
+
+    ds_delete_darray(&array1, NULL);
+    ds_delete_darray(&array2, NULL);
+    return PASS;
+}
+
+TESTFN(ds_darray_remove) {
+    ds_alloc = ds_malloc;
+
+    ds_darray array1 = ds_new_darray(sizeof(int), 8, NULL);
+    int one[] = { 1, 2, 3, 4 };
+    for(size_t i = 0; i < 4; ++i) ds_darray_push(&array1, &one[i], NULL);
+
+    int el;
+    int ret = ds_darray_remove(&array1, 2, &el);
+    TEST(!ret, "Removal unsuccessful.");
+    TEST(array1.length != 3, "Expected removal to decrease length.");
+    TEST(*(int*)ds_darray_at(array1, 2) != 4, "Expected removal to move elements beyond removal location down.");
+    TEST(el != 3, "Expected removal to fill third parameter.");
+    ret = ds_darray_remove(&array1, 1, NULL);
+    TEST(!ret, "Removal with NULL passed in to third parameter unsuccessful.");
+    ret = ds_darray_remove(&array1, 5, NULL);
+    TEST(ret, "Should return 0 when index is greater than array length.");
+
+    ds_delete_darray(&array1, NULL);
+    return PASS;
+}
+
+TESTFN(ds_darray_remove_range) {
+    ds_alloc = ds_malloc;
+
+    ds_darray array1 = ds_new_darray(sizeof(int), 8, NULL);
+    int one[] = { 1, 2, 3, 4, 5, 6 };
+    for(size_t i = 0; i < 6; ++i) ds_darray_push(&array1, &one[i], NULL);
+    ds_darray array2 = ds_new_darray(sizeof(int), 1, NULL);
+    int ret = ds_darray_remove_range(&array1, 2, 4, &array2, NULL);
+    TEST(!ret, "Removal of range unsuccessful.");
+    TEST(array1.length != 4, "Did not change length after removing 2 elements.");
+    TEST(*(int*)ds_darray_at(array1, 2) != 5, "Did not shift elements after removal.");
+    TEST(*(int*)ds_darray_at(array1, 3) != 6, "Did not shift elements after removal.");
+    TEST(array2.length != 2, "Length of array filled is not correct.");
+    TEST(array2.capacity == 1, "Capacity of array filled did not increase.");
+    TEST(*(int*)ds_darray_at(array2, 0) != 3, "Array not filled correctly.");
+    TEST(*(int*)ds_darray_at(array2, 1) != 4, "Array not filled correctly.");
+    ret = ds_darray_remove_range(&array1, 3, 6, NULL, NULL);
+    TEST(ret, "Should return 0 when range is out of bounds for array.");
+
+    ds_delete_darray(&array1, NULL);
+    ds_delete_darray(&array2, NULL);
+    return PASS;
+}
+
+TESTFN(ds_darray_subarray) {
+    ds_alloc = ds_malloc;
+
+    ds_darray array1 = ds_new_darray(sizeof(int), 8, NULL);
+    int one[] = { 1, 2, 3, 4, 5, 6 };
+    for(size_t i = 0; i < 6; ++i) ds_darray_push(&array1, &one[i], NULL);
+    ds_darray newarray = ds_darray_subarray(&array1, 2, 4, NULL);
+    TEST(newarray.length != 2, "Subarray is not the correct length.");
+    TEST(newarray.capacity < 2, "Subarray capacity is too small.");
+    TEST(newarray.size != array1.size, "Subarray element size is not correct.");
+    TEST(array1.length != 6, "Old array length is changed.");
+    TEST(*(int*)ds_darray_at(newarray, 0) != *(int*)ds_darray_at(array1, 2),
+            "Elements in subarray do not match old array.");
+    TEST(*(int*)ds_darray_at(newarray, 1) != *(int*)ds_darray_at(array1, 3),
+            "Elements in subarray do not match old array.");
+
+    ds_delete_darray(&newarray, NULL);
+    ds_delete_darray(&array1, NULL);
+
+    return PASS;
+}
+
 uint64_t inthash(void *e) {
     return (uint64_t)*(int*)e;
 }
@@ -344,6 +506,13 @@ int main(int argc, char **argv) {
     DOTEST(ds_darray_resize);
     DOTEST(ds_darray_push);
     DOTEST(ds_darray_at);
+    DOTEST(ds_darray_concat);
+    DOTEST(ds_darray_pop);
+    DOTEST(ds_darray_insert);
+    DOTEST(ds_darray_insert_array);
+    DOTEST(ds_darray_remove);
+    DOTEST(ds_darray_remove_range);
+    DOTEST(ds_darray_subarray);
 
     // Hash Set
     DOTEST(ds_new_hashset);
